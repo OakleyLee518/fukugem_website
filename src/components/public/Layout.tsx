@@ -1,10 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
+import { Category, CategoryTree } from '../../types/blog';
 
 interface LayoutProps {
   children: React.ReactNode;
+  categories: Category[];
+  getCategoryTree: () => CategoryTree[];
 }
 
-export function Layout({ children }: LayoutProps) {
+export function Layout({ children, categories, getCategoryTree }: LayoutProps) {
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const categoryTree = getCategoryTree();
+
+  // 處理下拉選單顯示/隱藏
+  const handleMouseEnter = (categoryId: string) => {
+    setActiveDropdown(categoryId);
+  };
+
+  const handleMouseLeave = () => {
+    // 加入小延遲避免滑鼠快速移動時閃爍
+    setTimeout(() => {
+      setActiveDropdown(null);
+    }, 100);
+  };
+
+  // 導航到分類頁面（目前導向首頁並篩選分類）
+  const handleCategoryClick = (categoryId: string) => {
+    window.location.href = `/?category=${categoryId}`;
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -21,35 +47,123 @@ export function Layout({ children }: LayoutProps) {
               </div>
             </div>
             
-            {/* Navigation */}
-            <nav className="hidden md:flex items-center space-x-12">
-              <a href="/" className="text-sm text-gray-700 hover:text-gray-900 transition-colors font-light tracking-wide">
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center space-x-8">
+              <a 
+                href="/" 
+                className="text-sm text-gray-700 hover:text-gray-900 transition-colors font-light tracking-wide"
+              >
                 首頁
               </a>
-              <a href="/travel" className="text-sm text-gray-700 hover:text-gray-900 transition-colors font-light tracking-wide">
-                旅遊景點
-              </a>
-              <a href="/food" className="text-sm text-gray-700 hover:text-gray-900 transition-colors font-light tracking-wide">
-                美食推薦
-              </a>
-              <a href="/accommodation" className="text-sm text-gray-700 hover:text-gray-900 transition-colors font-light tracking-wide">
-                住宿體驗
-              </a>
-              <a href="/activities" className="text-sm text-gray-700 hover:text-gray-900 transition-colors font-light tracking-wide">
-                活動體驗
-              </a>
-              <a href="/about" className="text-sm text-gray-700 hover:text-gray-900 transition-colors font-light tracking-wide">
+              
+              {/* 動態分類導航 */}
+              {categoryTree.map((mainCatTree) => (
+                <div 
+                  key={mainCatTree.category.id}
+                  className="relative"
+                  onMouseEnter={() => handleMouseEnter(mainCatTree.category.id)}
+                  onMouseLeave={handleMouseLeave}
+                >
+                  <button
+                    className="flex items-center text-sm text-gray-700 hover:text-gray-900 transition-colors font-light tracking-wide"
+                  >
+                    {mainCatTree.category.name}
+                    {mainCatTree.children.length > 0 && (
+                      <ChevronDown className="ml-1 h-4 w-4" />
+                    )}
+                  </button>
+
+                  {/* 下拉選單 */}
+                  {mainCatTree.children.length > 0 && activeDropdown === mainCatTree.category.id && (
+                    <div 
+                      className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50"
+                      onMouseEnter={() => setActiveDropdown(mainCatTree.category.id)}
+                      onMouseLeave={handleMouseLeave}
+                    >
+                      {mainCatTree.children.map((subCatTree) => (
+                        <button
+                          key={subCatTree.category.id}
+                          onClick={() => handleCategoryClick(subCatTree.category.id)}
+                          className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors font-light flex items-center"
+                        >
+                          <div 
+                            className="w-3 h-3 rounded-full mr-3"
+                            style={{ backgroundColor: subCatTree.category.color }}
+                          />
+                          <div>
+                            <div className="font-medium">{subCatTree.category.name}</div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {subCatTree.category.description}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              <a 
+                href="/about" 
+                className="text-sm text-gray-700 hover:text-gray-900 transition-colors font-light tracking-wide"
+              >
                 關於我們
               </a>
             </nav>
 
             {/* Mobile menu button */}
-            <button className="md:hidden">
+            <button 
+              className="md:hidden"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
               <svg className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
           </div>
+
+          {/* Mobile Navigation */}
+          {mobileMenuOpen && (
+            <div className="md:hidden border-t border-gray-100 py-4">
+              <div className="space-y-4">
+                <a 
+                  href="/"
+                  className="block text-sm text-gray-700 hover:text-gray-900 transition-colors font-light tracking-wide"
+                >
+                  首頁
+                </a>
+                
+                {/* 手機版分類選單 */}
+                {categoryTree.map((mainCatTree) => (
+                  <div key={mainCatTree.category.id} className="space-y-2">
+                    <div className="text-sm font-medium text-gray-900 tracking-wide">
+                      {mainCatTree.category.name}
+                    </div>
+                    {mainCatTree.children.map((subCatTree) => (
+                      <button
+                        key={subCatTree.category.id}
+                        onClick={() => handleCategoryClick(subCatTree.category.id)}
+                        className="block ml-4 text-sm text-gray-600 hover:text-gray-900 transition-colors font-light flex items-center"
+                      >
+                        <div 
+                          className="w-2 h-2 rounded-full mr-2"
+                          style={{ backgroundColor: subCatTree.category.color }}
+                        />
+                        {subCatTree.category.name}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+
+                <a 
+                  href="/about"
+                  className="block text-sm text-gray-700 hover:text-gray-900 transition-colors font-light tracking-wide"
+                >
+                  關於我們
+                </a>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
@@ -77,10 +191,25 @@ export function Layout({ children }: LayoutProps) {
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-6 tracking-wide">快速連結</h4>
               <ul className="space-y-4">
-                <li><a href="/travel" className="text-sm text-gray-600 hover:text-gray-900 transition-colors font-light">旅遊景點</a></li>
-                <li><a href="/food" className="text-sm text-gray-600 hover:text-gray-900 transition-colors font-light">美食推薦</a></li>
-                <li><a href="/accommodation" className="text-sm text-gray-600 hover:text-gray-900 transition-colors font-light">住宿體驗</a></li>
-                <li><a href="/activities" className="text-sm text-gray-600 hover:text-gray-900 transition-colors font-light">活動體驗</a></li>
+                {categoryTree.map((mainCatTree) => (
+                  <li key={mainCatTree.category.id}>
+                    <div className="text-sm text-gray-600 font-light mb-2">
+                      {mainCatTree.category.name}
+                    </div>
+                    <ul className="ml-3 space-y-1">
+                      {mainCatTree.children.slice(0, 3).map((subCatTree) => (
+                        <li key={subCatTree.category.id}>
+                          <button
+                            onClick={() => handleCategoryClick(subCatTree.category.id)}
+                            className="text-xs text-gray-500 hover:text-gray-700 transition-colors font-light"
+                          >
+                            {subCatTree.category.name}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
               </ul>
             </div>
 
@@ -105,8 +234,7 @@ export function Layout({ children }: LayoutProps) {
             <div className="mt-4 md:mt-0">
               <a 
                 href="/admin" 
-                className="text-xs text-gray-400 hover:text-gray-600 transition-colors font-light"
-                style={{ opacity: 0.3 }}
+                className="text-xs text-gray-500 hover:text-gray-700 transition-colors font-light"
               >
                 管理
               </a>

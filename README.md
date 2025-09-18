@@ -46,3 +46,10 @@
 `src/index.css` | 全域樣式、日式風格定義 |
 `tailwind.config.js` | Tailwind CSS 配置 |
 `index.html` | HTML 模板 |
+
+
+先修改資料結構 (types/blog.ts, useBlogData.ts)
+建立分類管理頁面 (CategoriesManagement.tsx)
+更新路由 (App.tsx)
+修改前台導航 (Layout.tsx)
+調整首頁邏輯 (HomePage.tsx)

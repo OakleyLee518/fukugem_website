@@ -12,6 +12,7 @@ import { Layout } from './components/public/Layout';
 // 後台頁面
 import { Login } from './pages/admin/Login';
 import { Dashboard } from './pages/admin/Dashboard';
+import { CategoriesManagement } from './pages/admin/CategoriesManagement';
 import { ProtectedRoute } from './components/admin/ProtectedRoute';
 
 function App() {
@@ -27,6 +28,13 @@ function App() {
     getArticlesByTag,
     getAllTags,
     getPublishedArticles,
+    // 新增：階層分類相關函數
+    getMainCategories,
+    getSubCategories,
+    getCategoryTree,
+    canDeleteCategory,
+    getCategoryPath,
+    moveCategory,
   } = useBlogData();
 
   const publishedArticles = getPublishedArticles();
@@ -38,10 +46,15 @@ function App() {
         <Routes>
           {/* 前台路由 */}
           <Route path="/" element={
-            <Layout>
+            <Layout 
+              categories={categories}
+              getCategoryTree={getCategoryTree}
+            >
               <HomePage
                 articles={publishedArticles}
                 categories={categories}
+                getCategoryTree={getCategoryTree}
+                getSubCategories={getSubCategories}
                 onSelectCategory={(categoryId) => {
                   // 這裡可以加入分類篩選邏輯
                   console.log('Selected category:', categoryId);
@@ -59,7 +72,10 @@ function App() {
           } />
 
           <Route path="/article/:id" element={
-            <Layout>
+            <Layout 
+              categories={categories}
+              getCategoryTree={getCategoryTree}
+            >
               <ArticleViewWrapper 
                 articles={articles} 
                 categories={categories}
@@ -68,7 +84,10 @@ function App() {
           } />
 
           <Route path="/tags/:tag" element={
-            <Layout>
+            <Layout 
+              categories={categories}
+              getCategoryTree={getCategoryTree}
+            >
               <TaggedArticlesWrapper 
                 articles={articles} 
                 categories={categories}
@@ -90,12 +109,32 @@ function App() {
             </ProtectedRoute>
           } />
 
+          {/* 新增：分類管理路由 */}
+          <Route path="/admin/categories" element={
+            <ProtectedRoute>
+              <CategoriesManagement
+                categories={categories}
+                articles={articles}
+                getCategoryTree={getCategoryTree}
+                canDeleteCategory={canDeleteCategory}
+                getCategoryPath={getCategoryPath}
+                addCategory={addCategory}
+                updateCategory={updateCategory}
+                deleteCategory={deleteCategory}
+                moveCategory={moveCategory}
+              />
+            </ProtectedRoute>
+          } />
+
           {/* 預設重導向 */}
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           
           {/* 404 頁面 */}
           <Route path="*" element={
-            <Layout>
+            <Layout 
+              categories={categories}
+              getCategoryTree={getCategoryTree}
+            >
               <div className="text-center py-12">
                 <h1 className="text-4xl font-bold text-gray-900 mb-4">404</h1>
                 <p className="text-gray-600">頁面不存在</p>
