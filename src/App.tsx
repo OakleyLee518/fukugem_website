@@ -16,6 +16,7 @@ import { Dashboard } from './pages/admin/Dashboard';
 import { CategoriesManagement } from './pages/admin/CategoriesManagement';
 import { ArticlesManagement } from './pages/admin/ArticlesManagement';
 import { ArticleEditor } from './pages/admin/ArticleEditor';
+import { TagsManagement } from './pages/admin/TagsManagement';
 import { ProtectedRoute } from './components/admin/ProtectedRoute';
 
 function App() {
@@ -173,6 +174,17 @@ function App() {
                 categories={categories}
                 getSubCategories={getSubCategories}
                 getCategoryPath={getCategoryPath}
+                updateArticle={updateArticle}
+              />
+            </ProtectedRoute>
+          } />
+
+          {/* 標籤管理路由 */}
+          <Route path="/admin/tags" element={
+            <ProtectedRoute>
+              <TagsManagement
+                articles={articles}
+                getAllTags={getAllTags}
                 updateArticle={updateArticle}
               />
             </ProtectedRoute>
