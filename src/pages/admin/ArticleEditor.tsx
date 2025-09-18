@@ -13,11 +13,11 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { AdminLayout } from '../../components/admin/AdminLayout';
-import { RichTextEditor } from '../../components/public/RichTextEditor';
+import { RichTextEditor } from '../../components/admin/RichTextEditor';
 import { Article, Category } from '../../types/blog';
 
 interface ArticleEditorProps {
-  article?: Article; // undefined 表示新增文章
+  article?: Article;
   categories: Category[];
   getSubCategories: (parentId?: string) => Category[];
   getCategoryPath: (categoryId: string) => string;
@@ -51,11 +51,11 @@ export function ArticleEditor({
   // UI 狀態
   const [currentTag, setCurrentTag] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isDirty, setIsDirty] = useState(false);
   const [showImageUpload, setShowImageUpload] = useState(false);
 
-  // 如果是編輯模式，載入文章資料
+  // 載入文章資料
   useEffect(() => {
     if (article) {
       setFormData({
@@ -79,8 +79,8 @@ export function ArticleEditor({
   }, [formData, isEditing]);
 
   // 表單驗證
-  const validateForm = () => {
-    const newErrors: {[key: string]: string} = {};
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
 
     if (!formData.title.trim()) {
       newErrors.title = '請輸入文章標題';
@@ -105,9 +105,7 @@ export function ArticleEditor({
   // 自動生成摘要
   const generateExcerpt = () => {
     if (formData.content) {
-      const div = document.createElement('div');
-      div.innerHTML = formData.content;
-      const text = div.textContent || div.innerText || '';
+      const text = formData.content.replace(/<[^>]*>/g, '');
       const excerpt = text.substring(0, 150) + (text.length > 150 ? '...' : '');
       setFormData(prev => ({ ...prev, excerpt }));
     }
@@ -133,18 +131,16 @@ export function ArticleEditor({
     }));
   };
 
-  // 處理圖片上傳 (模擬)
+  // 圖片上傳處理
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // 檢查檔案類型
     if (!file.type.startsWith('image/')) {
       alert('請選擇圖片檔案');
       return;
     }
 
-    // 檢查檔案大小 (5MB)
     if (file.size > 5 * 1024 * 1024) {
       alert('圖片檔案不能超過 5MB');
       return;
@@ -152,19 +148,16 @@ export function ArticleEditor({
 
     setIsUploading(true);
 
-    // 模擬上傳過程
     const reader = new FileReader();
     reader.onload = (e) => {
       setTimeout(() => {
-        // 這裡模擬上傳成功，實際上應該上傳到伺服器
-        const imageUrl = e.target?.result as string;
-        setFormData(prev => ({ ...prev, imageUrl }));
-        setIsUploading(false);
-        setShowImageUpload(false);
-        
-        // 實際應用中，這裡會是：
-        // uploadImage(file).then(url => setFormData(prev => ({ ...prev, imageUrl: url })))
-      }, 1500); // 模擬網路延遲
+        if (e.target?.result) {
+          const imageUrl = e.target.result as string;
+          setFormData(prev => ({ ...prev, imageUrl }));
+          setIsUploading(false);
+          setShowImageUpload(false);
+        }
+      }, 1500);
     };
     reader.readAsDataURL(file);
   };
@@ -179,11 +172,8 @@ export function ArticleEditor({
       const articleData = {
         ...formData,
         published: publishNow,
-        // 如果沒有摘要，自動生成
         excerpt: formData.excerpt.trim() || (() => {
-          const div = document.createElement('div');
-          div.innerHTML = formData.content;
-          const text = div.textContent || div.innerText || '';
+          const text = formData.content.replace(/<[^>]*>/g, '');
           return text.substring(0, 150) + (text.length > 150 ? '...' : '');
         })()
       };
@@ -194,7 +184,6 @@ export function ArticleEditor({
         addArticle(articleData);
       }
 
-      // 成功後導航回文章列表
       window.location.href = '/admin/articles';
     } catch (error) {
       alert('儲存失敗，請重試');
@@ -211,7 +200,7 @@ export function ArticleEditor({
     }
   };
 
-  // 返回文章列表
+  // 返回列表
   const handleBack = () => {
     if (isDirty && !window.confirm('有未儲存的變更，確定要離開嗎？')) {
       return;
@@ -221,9 +210,9 @@ export function ArticleEditor({
 
   return (
     <AdminLayout currentView="articles">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6 px-4 sm:px-6 lg:px-8">
         {/* 頁面標題和操作 */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-4">
             <button
               onClick={handleBack}
@@ -232,20 +221,20 @@ export function ArticleEditor({
               <ArrowLeft className="h-5 w-5" />
             </button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
                 {isEditing ? '編輯文章' : '新增文章'}
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-gray-600 mt-1 text-sm sm:text-base">
                 {isEditing ? `編輯「${article?.title}」` : '建立新的文章內容'}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
             {isEditing && (
               <button
                 onClick={handlePreview}
-                className="flex items-center space-x-2 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="flex items-center justify-center space-x-2 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
               >
                 <Eye className="h-4 w-4" />
                 <span>預覽</span>
@@ -253,14 +242,14 @@ export function ArticleEditor({
             )}
             <button
               onClick={() => handleSave(false)}
-              className="flex items-center space-x-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="flex items-center justify-center space-x-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
             >
               <Save className="h-4 w-4" />
               <span>儲存草稿</span>
             </button>
             <button
               onClick={() => handleSave(true)}
-              className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+              className="flex items-center justify-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
             >
               <Eye className="h-4 w-4" />
               <span>發布</span>
@@ -269,9 +258,9 @@ export function ArticleEditor({
         </div>
 
         {/* 主要編輯表單 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* 左側：主要內容 */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="xl:col-span-2 space-y-6">
             {/* 文章標題 */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <div className="flex items-center space-x-3 mb-4">
@@ -343,10 +332,12 @@ export function ArticleEditor({
                 <FileText className="h-5 w-5 text-gray-400" />
                 <h2 className="text-lg font-semibold text-gray-900">文章內容</h2>
               </div>
-              <div className={`border rounded-lg ${errors.content ? 'border-red-500' : 'border-gray-300'}`}>
+              <div className={errors.content ? 'border-red-500 rounded-lg' : ''}>
                 <RichTextEditor
                   value={formData.content}
                   onChange={(content) => setFormData(prev => ({ ...prev, content }))}
+                  placeholder="開始撰寫你的文章內容..."
+                  minHeight="500px"
                 />
               </div>
               {errors.content && (
@@ -355,6 +346,9 @@ export function ArticleEditor({
                   {errors.content}
                 </div>
               )}
+              <div className="mt-2 text-sm text-gray-500">
+                字數：{formData.content.replace(/<[^>]*>/g, '').length}
+              </div>
             </div>
 
             {/* 文章摘要 */}
@@ -469,22 +463,20 @@ export function ArticleEditor({
                 </div>
               )}
 
-              {formData.categoryId && (
-                <div className="mt-3">
-                  {(() => {
-                    const selectedCategory = categories.find(c => c.id === formData.categoryId);
-                    return selectedCategory && (
-                      <div className="flex items-center space-x-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                        <div 
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: selectedCategory.color }}
-                        />
-                        <span>{getCategoryPath(selectedCategory.id)}</span>
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
+              {formData.categoryId && (() => {
+                const selectedCategory = categories.find(c => c.id === formData.categoryId);
+                return selectedCategory && (
+                  <div className="mt-3">
+                    <div className="flex items-center space-x-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                      <div 
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: selectedCategory.color }}
+                      />
+                      <span>{getCategoryPath(selectedCategory.id)}</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* 標籤設定 */}
@@ -537,8 +529,8 @@ export function ArticleEditor({
 
         {/* 圖片上傳對話框 */}
         {showImageUpload && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md mx-auto">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">上傳封面圖片</h3>
                 <button

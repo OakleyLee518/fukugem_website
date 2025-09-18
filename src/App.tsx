@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthContext';
 import { useBlogData } from './hooks/useBlogData';
+import { Article, Category } from './types/blog';
 
 // 前台頁面
 import { HomePage } from './pages/public/HomePage';
@@ -13,6 +14,8 @@ import { Layout } from './components/public/Layout';
 import { Login } from './pages/admin/Login';
 import { Dashboard } from './pages/admin/Dashboard';
 import { CategoriesManagement } from './pages/admin/CategoriesManagement';
+import { ArticlesManagement } from './pages/admin/ArticlesManagement';
+import { ArticleEditor } from './pages/admin/ArticleEditor';
 import { ProtectedRoute } from './components/admin/ProtectedRoute';
 
 function App() {
@@ -136,6 +139,45 @@ function App() {
             </ProtectedRoute>
           } />
 
+          {/* 文章管理路由 */}
+          <Route path="/admin/articles" element={
+            <ProtectedRoute>
+              <ArticlesManagement
+                articles={articles}
+                categories={categories}
+                getSubCategories={getSubCategories}
+                getCategoryPath={getCategoryPath}
+                updateArticle={updateArticle}
+                deleteArticle={deleteArticle}
+              />
+            </ProtectedRoute>
+          } />
+
+          {/* 新增文章路由 */}
+          <Route path="/admin/articles/new" element={
+            <ProtectedRoute>
+              <ArticleEditor
+                categories={categories}
+                getSubCategories={getSubCategories}
+                getCategoryPath={getCategoryPath}
+                addArticle={addArticle}
+              />
+            </ProtectedRoute>
+          } />
+
+          {/* 編輯文章路由 */}
+          <Route path="/admin/articles/edit/:id" element={
+            <ProtectedRoute>
+              <ArticleEditorWrapper
+                articles={articles}
+                categories={categories}
+                getSubCategories={getSubCategories}
+                getCategoryPath={getCategoryPath}
+                updateArticle={updateArticle}
+              />
+            </ProtectedRoute>
+          } />
+
           {/* 預設重導向 */}
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           
@@ -157,6 +199,45 @@ function App() {
         </Routes>
       </Router>
     </AuthProvider>
+  );
+}
+
+// 編輯文章包裝組件
+function ArticleEditorWrapper({ 
+  articles, 
+  categories,
+  getSubCategories,
+  getCategoryPath,
+  updateArticle
+}: { 
+  articles: Article[], 
+  categories: Category[],
+  getSubCategories: (parentId?: string) => Category[],
+  getCategoryPath: (categoryId: string) => string,
+  updateArticle: (id: string, updates: Partial<Article>) => void
+}) {
+  const articleId = window.location.pathname.split('/').pop();
+  const article = articles.find(a => a.id === articleId);
+
+  if (!article) {
+    return (
+      <div className="text-center py-12">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">文章不存在</h1>
+        <a href="/admin/articles" className="text-blue-600 hover:text-blue-700">
+          回到文章管理
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <ArticleEditor
+      article={article}
+      categories={categories}
+      getSubCategories={getSubCategories}
+      getCategoryPath={getCategoryPath}
+      updateArticle={updateArticle}
+    />
   );
 }
 
