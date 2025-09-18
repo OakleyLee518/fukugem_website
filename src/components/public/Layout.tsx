@@ -23,7 +23,7 @@ export function Layout({ children, categories, getCategoryTree }: LayoutProps) {
     // 加入較長延遲確保滑鼠可以移動到下拉選單
     setTimeout(() => {
       setActiveDropdown(null);
-    }, 300);
+    }, 150);
   };
 
   // 導航到分類頁面（目前導向首頁並篩選分類）

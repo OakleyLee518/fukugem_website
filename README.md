@@ -48,8 +48,34 @@
 `index.html` | HTML 模板 |
 
 
+
+
+1. 文章管理 (/admin/articles)
+
+文章列表（已發布/草稿）
+新增文章
+編輯文章
+刪除文章
+發布/取消發布
+
+2. 分類管理 (/admin/categories)
+
+分類列表
+新增分類 (主分類、子分類)
+編輯分類（名稱、描述、顏色）
+刪除分類
+
 先修改資料結構 (types/blog.ts, useBlogData.ts)
 建立分類管理頁面 (CategoriesManagement.tsx)
 更新路由 (App.tsx)
 修改前台導航 (Layout.tsx)
 調整首頁邏輯 (HomePage.tsx)
+
+3. 標籤管理 (/admin/tags)
+
+標籤列表（顯示使用次數）
+編輯標籤名稱
+刪除標籤
+合併標籤
+
+
