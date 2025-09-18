@@ -20,10 +20,10 @@ export function Layout({ children, categories, getCategoryTree }: LayoutProps) {
   };
 
   const handleMouseLeave = () => {
-    // 加入小延遲避免滑鼠快速移動時閃爍
+    // 加入較長延遲確保滑鼠可以移動到下拉選單
     setTimeout(() => {
       setActiveDropdown(null);
-    }, 100);
+    }, 300);
   };
 
   // 導航到分類頁面（目前導向首頁並篩選分類）
@@ -79,6 +79,11 @@ export function Layout({ children, categories, getCategoryTree }: LayoutProps) {
                       className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50"
                       onMouseEnter={() => setActiveDropdown(mainCatTree.category.id)}
                       onMouseLeave={handleMouseLeave}
+                      style={{ 
+                        // 確保下拉選單和按鈕之間沒有空隙
+                        marginTop: '0px',
+                        paddingTop: '4px'
+                      }}
                     >
                       {mainCatTree.children.map((subCatTree) => (
                         <button
