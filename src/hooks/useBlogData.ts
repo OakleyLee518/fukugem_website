@@ -252,38 +252,59 @@ const defaultArticles: Article[] = [
 export function useBlogData() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Load data from localStorage on mount
   useEffect(() => {
-    const savedCategories = localStorage.getItem(STORAGE_KEYS.categories);
-    const savedArticles = localStorage.getItem(STORAGE_KEYS.articles);
+    try {
+      const savedCategories = localStorage.getItem(STORAGE_KEYS.categories);
+      const savedArticles = localStorage.getItem(STORAGE_KEYS.articles);
 
-    if (savedCategories) {
-      setCategories(JSON.parse(savedCategories));
-    } else {
+      if (savedCategories) {
+        const parsedCategories = JSON.parse(savedCategories);
+        setCategories(parsedCategories);
+      } else {
+        setCategories(defaultCategories);
+      }
+
+      if (savedArticles) {
+        const parsedArticles = JSON.parse(savedArticles);
+        setArticles(parsedArticles);
+      } else {
+        setArticles(defaultArticles);
+      }
+      
+      setIsLoaded(true);
+    } catch (error) {
+      console.error('Error loading data from localStorage:', error);
+      // 如果 localStorage 有問題，使用預設資料
       setCategories(defaultCategories);
-    }
-
-    if (savedArticles) {
-      setArticles(JSON.parse(savedArticles));
-    } else {
       setArticles(defaultArticles);
+      setIsLoaded(true);
     }
   }, []);
 
   // Save categories to localStorage
   useEffect(() => {
-    if (categories.length > 0) {
-      localStorage.setItem(STORAGE_KEYS.categories, JSON.stringify(categories));
+    if (isLoaded && categories.length > 0) {
+      try {
+        localStorage.setItem(STORAGE_KEYS.categories, JSON.stringify(categories));
+      } catch (error) {
+        console.error('Error saving categories to localStorage:', error);
+      }
     }
-  }, [categories]);
+  }, [categories, isLoaded]);
 
   // Save articles to localStorage
   useEffect(() => {
-    if (articles.length > 0) {
-      localStorage.setItem(STORAGE_KEYS.articles, JSON.stringify(articles));
+    if (isLoaded && articles.length > 0) {
+      try {
+        localStorage.setItem(STORAGE_KEYS.articles, JSON.stringify(articles));
+      } catch (error) {
+        console.error('Error saving articles to localStorage:', error);
+      }
     }
-  }, [articles]);
+  }, [articles, isLoaded]);
 
   // === 新增：階層分類相關函數 ===
   

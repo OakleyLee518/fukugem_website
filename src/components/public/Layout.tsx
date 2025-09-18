@@ -241,7 +241,7 @@ export function Layout({ children, categories, getCategoryTree }: LayoutProps) {
                 href="/admin" 
                 className="text-xs text-gray-500 hover:text-gray-700 transition-colors font-light"
               >
-                管理
+                管理後臺
               </a>
             </div>
           </div>
