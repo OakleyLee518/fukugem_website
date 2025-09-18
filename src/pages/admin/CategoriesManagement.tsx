@@ -53,7 +53,6 @@ export function CategoriesManagement({
   });
 
   const categoryTree = getCategoryTree();
-  const mainCategories = categories.filter(cat => !cat.parentId);
 
   // 展開/收合分類
   const toggleExpanded = (categoryId: string) => {
@@ -149,19 +148,54 @@ export function CategoriesManagement({
     }
   };
 
-  // 刪除分類
+  // 刪除分類 - 修復版本
   const handleDelete = (categoryId: string) => {
+    // 第一次點擊：顯示確認狀態
     if (deleteConfirm !== categoryId) {
       setDeleteConfirm(categoryId);
-      setTimeout(() => setDeleteConfirm(''), 3000); // 3秒後清除確認狀態
+      setTimeout(() => setDeleteConfirm(''), 5000); // 5秒後清除確認狀態
       return;
     }
 
+    // 第二次點擊：執行刪除
     try {
+      // 檢查是否可以刪除
+      const canDelete = canDeleteCategory(categoryId);
+      
+      if (!canDelete) {
+        const category = categories.find(c => c.id === categoryId);
+        const isMainCategory = category && !category.parentId;
+        
+        if (isMainCategory) {
+          const subCategories = categories.filter(c => c.parentId === categoryId);
+          if (subCategories.length > 0) {
+            alert(`無法刪除主分類「${category.name}」：請先刪除底下的 ${subCategories.length} 個子分類`);
+            setDeleteConfirm('');
+            return;
+          }
+        } else {
+          const articleCount = articles.filter(a => a.categoryId === categoryId).length;
+          if (articleCount > 0) {
+            alert(`無法刪除分類「${category?.name}」：此分類底下還有 ${articleCount} 篇文章，請先移動或刪除這些文章`);
+            setDeleteConfirm('');
+            return;
+          }
+        }
+      }
+      
+      // 執行刪除
       deleteCategory(categoryId);
       setDeleteConfirm('');
+      
+      // 顯示成功訊息
+      const deletedCategory = categories.find(c => c.id === categoryId);
+      if (deletedCategory) {
+        console.log(`已成功刪除分類：${deletedCategory.name}`);
+      }
+      
     } catch (error) {
-      alert(error instanceof Error ? error.message : '刪除失敗');
+      console.error('刪除失敗:', error);
+      alert(error instanceof Error ? error.message : '刪除失敗，請重試');
       setDeleteConfirm('');
     }
   };
@@ -175,6 +209,36 @@ export function CategoriesManagement({
   const getTotalArticleCount = (mainCategoryId: string): number => {
     const subCategories = categories.filter(cat => cat.parentId === mainCategoryId);
     return subCategories.reduce((total, subCat) => total + getArticleCount(subCat.id), 0);
+  };
+
+  // 獲取刪除按鈕的樣式和提示文字
+  const getDeleteButtonProps = (categoryId: string) => {
+    const canDelete = canDeleteCategory(categoryId);
+    const isConfirming = deleteConfirm === categoryId;
+    const category = categories.find(c => c.id === categoryId);
+    const isMainCategory = category && !category.parentId;
+    
+    let className = 'p-2 rounded-lg transition-colors ';
+    let title = '';
+    
+    if (!canDelete) {
+      className += 'text-gray-300 cursor-not-allowed bg-gray-50';
+      if (isMainCategory) {
+        const subCategoryCount = categories.filter(c => c.parentId === categoryId).length;
+        title = `無法刪除：請先刪除底下的 ${subCategoryCount} 個子分類`;
+      } else {
+        const articleCount = getArticleCount(categoryId);
+        title = `無法刪除：此分類有 ${articleCount} 篇文章`;
+      }
+    } else if (isConfirming) {
+      className += 'text-red-600 bg-red-50 border border-red-200';
+      title = '再次點擊確認刪除';
+    } else {
+      className += 'text-gray-400 hover:text-red-600 hover:bg-red-50';
+      title = '刪除分類';
+    }
+    
+    return { className, title, disabled: !canDelete };
   };
 
   const colorOptions = [
@@ -210,158 +274,142 @@ export function CategoriesManagement({
         <div className="bg-white rounded-xl shadow-sm">
           {categoryTree.length > 0 ? (
             <div className="divide-y divide-gray-200">
-              {categoryTree.map((mainCatTree) => (
-                <div key={mainCatTree.category.id}>
-                  {/* 主分類 */}
-                  <div className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        {/* 展開/收合按鈕 */}
-                        <button
-                          onClick={() => toggleExpanded(mainCatTree.category.id)}
-                          className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                          {expandedCategories.has(mainCatTree.category.id) ? (
-                            <ChevronDown className="h-5 w-5 text-gray-400" />
-                          ) : (
-                            <ChevronRight className="h-5 w-5 text-gray-400" />
-                          )}
-                        </button>
-
-                        {/* 分類資訊 */}
-                        <div className="flex items-center space-x-3">
-                          <div 
-                            className="w-4 h-4 rounded-full"
-                            style={{ backgroundColor: mainCatTree.category.color }}
-                          />
-                          <FolderOpen className="h-5 w-5 text-gray-400" />
-                          <div>
-                            <h3 className="font-semibold text-gray-900">
-                              {mainCatTree.category.name}
-                            </h3>
-                            <p className="text-sm text-gray-500">
-                              {mainCatTree.category.description}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* 統計資訊 */}
-                        <div className="flex items-center space-x-4 text-sm text-gray-500">
-                          <span>{mainCatTree.children.length} 個子分類</span>
-                          <span>{getTotalArticleCount(mainCatTree.category.id)} 篇文章</span>
-                        </div>
-                      </div>
-
-                      {/* 操作按鈕 */}
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => openCreateSubModal(mainCatTree.category.id)}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="新增子分類"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => openEditModal(mainCatTree.category)}
-                          className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                          title="編輯分類"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(mainCatTree.category.id)}
-                          disabled={!canDeleteCategory(mainCatTree.category.id)}
-                          className={`p-2 rounded-lg transition-colors ${
-                            canDeleteCategory(mainCatTree.category.id)
-                              ? deleteConfirm === mainCatTree.category.id 
-                                ? 'text-red-600 bg-red-50' 
-                                : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
-                              : 'text-gray-300 cursor-not-allowed'
-                          }`}
-                          title={
-                            canDeleteCategory(mainCatTree.category.id)
-                              ? deleteConfirm === mainCatTree.category.id 
-                                ? '再次點擊確認刪除' 
-                                : '刪除分類'
-                              : '請先刪除子分類和文章'
-                          }
-                        >
-                          {deleteConfirm === mainCatTree.category.id ? (
-                            <AlertTriangle className="h-4 w-4" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* 子分類列表 */}
-                    {expandedCategories.has(mainCatTree.category.id) && mainCatTree.children.length > 0 && (
-                      <div className="mt-4 ml-12 space-y-3">
-                        {mainCatTree.children.map((subCatTree) => (
-                          <div 
-                            key={subCatTree.category.id}
-                            className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+              {categoryTree.map((mainCatTree) => {
+                const deleteProps = getDeleteButtonProps(mainCatTree.category.id);
+                
+                return (
+                  <div key={mainCatTree.category.id}>
+                    {/* 主分類 */}
+                    <div className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          {/* 展開/收合按鈕 */}
+                          <button
+                            onClick={() => toggleExpanded(mainCatTree.category.id)}
+                            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
                           >
-                            <div className="flex items-center space-x-3">
-                              <div 
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: subCatTree.category.color }}
-                              />
-                              <Folder className="h-4 w-4 text-gray-400" />
-                              <div>
-                                <h4 className="font-medium text-gray-900">
-                                  {subCatTree.category.name}
-                                </h4>
-                                <p className="text-xs text-gray-500">
-                                  {subCatTree.category.description}
-                                </p>
-                              </div>
-                              <span className="text-sm text-gray-500">
-                                {getArticleCount(subCatTree.category.id)} 篇文章
-                              </span>
-                            </div>
+                            {expandedCategories.has(mainCatTree.category.id) ? (
+                              <ChevronDown className="h-5 w-5 text-gray-400" />
+                            ) : (
+                              <ChevronRight className="h-5 w-5 text-gray-400" />
+                            )}
+                          </button>
 
-                            <div className="flex items-center space-x-2">
-                              <button
-                                onClick={() => openEditModal(subCatTree.category)}
-                                className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                title="編輯子分類"
-                              >
-                                <Edit2 className="h-3 w-3" />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(subCatTree.category.id)}
-                                disabled={!canDeleteCategory(subCatTree.category.id)}
-                                className={`p-1 rounded-lg transition-colors ${
-                                  canDeleteCategory(subCatTree.category.id)
-                                    ? deleteConfirm === subCatTree.category.id 
-                                      ? 'text-red-600 bg-red-50' 
-                                      : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
-                                    : 'text-gray-300 cursor-not-allowed'
-                                }`}
-                                title={
-                                  canDeleteCategory(subCatTree.category.id)
-                                    ? deleteConfirm === subCatTree.category.id 
-                                      ? '再次點擊確認刪除' 
-                                      : '刪除子分類'
-                                    : '請先刪除文章'
-                                }
-                              >
-                                {deleteConfirm === subCatTree.category.id ? (
-                                  <AlertTriangle className="h-3 w-3" />
-                                ) : (
-                                  <Trash2 className="h-3 w-3" />
-                                )}
-                              </button>
+                          {/* 分類資訊 */}
+                          <div className="flex items-center space-x-3">
+                            <div 
+                              className="w-4 h-4 rounded-full"
+                              style={{ backgroundColor: mainCatTree.category.color }}
+                            />
+                            <FolderOpen className="h-5 w-5 text-gray-400" />
+                            <div>
+                              <h3 className="font-semibold text-gray-900">
+                                {mainCatTree.category.name}
+                              </h3>
+                              <p className="text-sm text-gray-500">
+                                {mainCatTree.category.description}
+                              </p>
                             </div>
                           </div>
-                        ))}
+
+                          {/* 統計資訊 */}
+                          <div className="flex items-center space-x-4 text-sm text-gray-500">
+                            <span>{mainCatTree.children.length} 個子分類</span>
+                            <span>{getTotalArticleCount(mainCatTree.category.id)} 篇文章</span>
+                          </div>
+                        </div>
+
+                        {/* 操作按鈕 */}
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => openCreateSubModal(mainCatTree.category.id)}
+                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="新增子分類"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => openEditModal(mainCatTree.category)}
+                            className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                            title="編輯分類"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(mainCatTree.category.id)}
+                            disabled={deleteProps.disabled}
+                            className={deleteProps.className}
+                            title={deleteProps.title}
+                          >
+                            {deleteConfirm === mainCatTree.category.id ? (
+                              <AlertTriangle className="h-4 w-4" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
                       </div>
-                    )}
+
+                      {/* 子分類列表 */}
+                      {expandedCategories.has(mainCatTree.category.id) && mainCatTree.children.length > 0 && (
+                        <div className="mt-4 ml-12 space-y-3">
+                          {mainCatTree.children.map((subCatTree) => {
+                            const subDeleteProps = getDeleteButtonProps(subCatTree.category.id);
+                            
+                            return (
+                              <div 
+                                key={subCatTree.category.id}
+                                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                              >
+                                <div className="flex items-center space-x-3">
+                                  <div 
+                                    className="w-3 h-3 rounded-full"
+                                    style={{ backgroundColor: subCatTree.category.color }}
+                                  />
+                                  <Folder className="h-4 w-4 text-gray-400" />
+                                  <div>
+                                    <h4 className="font-medium text-gray-900">
+                                      {subCatTree.category.name}
+                                    </h4>
+                                    <p className="text-xs text-gray-500">
+                                      {subCatTree.category.description}
+                                    </p>
+                                  </div>
+                                  <span className="text-sm text-gray-500">
+                                    {getArticleCount(subCatTree.category.id)} 篇文章
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    onClick={() => openEditModal(subCatTree.category)}
+                                    className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                    title="編輯子分類"
+                                  >
+                                    <Edit2 className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(subCatTree.category.id)}
+                                    disabled={subDeleteProps.disabled}
+                                    className={subDeleteProps.className.replace('p-2', 'p-1')}
+                                    title={subDeleteProps.title}
+                                  >
+                                    {deleteConfirm === subCatTree.category.id ? (
+                                      <AlertTriangle className="h-3 w-3" />
+                                    ) : (
+                                      <Trash2 className="h-3 w-3" />
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="p-12 text-center">
@@ -474,6 +522,18 @@ export function CategoriesManagement({
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+        
+        {/* 刪除提示 */}
+        {deleteConfirm && (
+          <div className="fixed bottom-4 right-4 bg-yellow-100 border border-yellow-300 rounded-lg p-4 shadow-lg z-50">
+            <div className="flex items-center space-x-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              <p className="text-yellow-800 text-sm">
+                再次點擊刪除按鈕確認刪除分類
+              </p>
             </div>
           </div>
         )}
