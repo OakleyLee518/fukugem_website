@@ -14,10 +14,10 @@ export function Layout({ children }: LayoutProps) {
             {/* Logo */}
             <div className="flex items-center">
               <a href="/" className="text-2xl font-light text-gray-900 tracking-wider">
-                九州山口
+                福寶｜福岡、九州慢遊體驗
               </a>
               <div className="ml-4 text-xs text-gray-500 font-light">
-                KYUSHU YAMAGUCHI
+                KYUSHU FUKUOKA
               </div>
             </div>
             

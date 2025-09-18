@@ -55,14 +55,14 @@ export function HomePage({
         
         <div className="relative z-10 h-full flex items-center justify-center">
           <div className="text-center text-white max-w-4xl px-6">
-            <h1 className="text-5xl md:text-7xl font-light mb-8 tracking-wider">
-              九州山口
+            <h1 className="text-5xl md:text-6xl font-light mb-8 tracking-wider">
+              福寶｜福岡、九州慢遊體驗
             </h1>
             <div className="text-lg md:text-xl font-light tracking-wide mb-8 opacity-90">
-              KYUSHU YAMAGUCHI TRAVEL GUIDE
+              FUKUOKA LIFE GEM
             </div>
             <p className="text-lg md:text-xl font-light leading-relaxed max-w-2xl mx-auto opacity-80">
-              探索日本西南部的隱藏魅力，體驗最道地的溫泉文化與絕美自然景觀
+              探索日本西南部的隱藏魅力，體驗最道地的文化與絕美自然景觀
             </p>
           </div>
         </div>
@@ -178,7 +178,7 @@ export function HomePage({
       <section className="py-20 bg-white">
         <div className="max-w-4xl mx-auto text-center px-6 lg:px-8">
           <h2 className="text-3xl font-light text-gray-900 mb-6 tracking-wide">
-            開始您的九州山口之旅
+            開始您的九州之旅
           </h2>
           <div className="w-16 h-px bg-gray-300 mx-auto mb-8"></div>
           <p className="text-lg text-gray-600 font-light leading-relaxed mb-12 max-w-2xl mx-auto">
