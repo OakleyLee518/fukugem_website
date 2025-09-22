@@ -162,9 +162,12 @@ export function ArticleEditor({
     reader.readAsDataURL(file);
   };
 
-  // 儲存文章
+  // 儲存文章 - 修復版本
   const handleSave = async (publishNow: boolean = false) => {
+    console.log('開始儲存文章...', { publishNow, formData });
+    
     if (!validateForm()) {
+      console.log('表單驗證失敗');
       return;
     }
 
@@ -172,22 +175,60 @@ export function ArticleEditor({
       const articleData = {
         ...formData,
         published: publishNow,
+        // 如果沒有摘要，自動生成
         excerpt: formData.excerpt.trim() || (() => {
           const text = formData.content.replace(/<[^>]*>/g, '');
           return text.substring(0, 150) + (text.length > 150 ? '...' : '');
         })()
       };
 
-      if (isEditing && article && updateArticle) {
-        updateArticle(article.id, articleData);
-      } else if (!isEditing && addArticle) {
-        addArticle(articleData);
+      console.log('準備儲存的文章資料:', articleData);
+
+      // 檢查分類是否為子分類
+      const selectedCategory = categories.find(cat => cat.id === articleData.categoryId);
+      console.log('選中的分類:', selectedCategory);
+      
+      if (!selectedCategory) {
+        throw new Error('找不到選中的分類');
+      }
+      
+      if (!selectedCategory.parentId) {
+        throw new Error('請選擇子分類，不能選擇主分類');
       }
 
-      window.location.href = '/admin/articles';
+      if (isEditing && article && updateArticle) {
+        console.log('更新現有文章:', article.id);
+        updateArticle(article.id, articleData);
+      } else if (!isEditing && addArticle) {
+        console.log('建立新文章');
+        const newArticle = addArticle(articleData);
+        console.log('新文章已建立:', newArticle);
+      } else {
+        throw new Error('缺少必要的函數參數');
+      }
+
+      console.log('文章儲存成功，準備跳轉...');
+      
+      // 給一點時間讓狀態更新
+      setTimeout(() => {
+        window.location.href = '/admin/articles';
+      }, 100);
+
     } catch (error) {
-      alert('儲存失敗，請重試');
-      console.error('Save error:', error);
+      console.error('儲存失敗:', error);
+      
+      // 更詳細的錯誤訊息
+      let errorMessage = '儲存失敗，請重試';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('子分類')) {
+          errorMessage = '請選擇子分類（如：福岡市區、拉麵等），不能選擇主分類（如：旅遊景點、美食推薦等）';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      alert(errorMessage);
     }
   };
 

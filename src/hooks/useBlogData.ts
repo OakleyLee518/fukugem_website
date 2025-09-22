@@ -398,11 +398,21 @@ export function useBlogData() {
     }));
   };
 
-  const addArticle = (article: Omit<Article, 'id' | 'createdAt' | 'updatedAt'>) => {
-    // 確保文章只能歸類到子分類
+const addArticle = (article: Omit<Article, 'id' | 'createdAt' | 'updatedAt'>) => {
+    console.log('addArticle 被呼叫:', article);
+    
+    // 檢查分類是否存在且為子分類
     const category = categories.find(cat => cat.id === article.categoryId);
-    if (!category || !category.parentId) {
-      throw new Error('文章只能歸類到子分類');
+    console.log('找到的分類:', category);
+    
+    if (!category) {
+      console.error('找不到分類:', article.categoryId);
+      throw new Error(`找不到ID為 ${article.categoryId} 的分類`);
+    }
+    
+    if (!category.parentId) {
+      console.error('不是子分類:', category);
+      throw new Error(`「${category.name}」是主分類，請選擇子分類（如：${categories.filter(c => c.parentId === category.id).map(c => c.name).join('、')}）`);
     }
     
     const newArticle: Article = {
@@ -411,24 +421,44 @@ export function useBlogData() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    setArticles(prev => [...prev, newArticle]);
+    
+    console.log('準備新增文章:', newArticle);
+    
+    setArticles(prev => {
+      const updated = [...prev, newArticle];
+      console.log('文章陣列更新後:', updated.length, '篇文章');
+      return updated;
+    });
+    
     return newArticle;
   };
 
   const updateArticle = (id: string, updates: Partial<Article>) => {
+    console.log('updateArticle 被呼叫:', { id, updates });
+    
     // 如果更新分類，確保是子分類
     if (updates.categoryId) {
       const category = categories.find(cat => cat.id === updates.categoryId);
-      if (!category || !category.parentId) {
-        throw new Error('文章只能歸類到子分類');
+      console.log('更新分類到:', category);
+      
+      if (!category) {
+        throw new Error(`找不到ID為 ${updates.categoryId} 的分類`);
+      }
+      
+      if (!category.parentId) {
+        throw new Error(`「${category.name}」是主分類，請選擇子分類`);
       }
     }
     
-    setArticles(prev => prev.map(article => 
-      article.id === id 
-        ? { ...article, ...updates, updatedAt: new Date().toISOString() }
-        : article
-    ));
+    setArticles(prev => {
+      const updated = prev.map(article => 
+        article.id === id 
+          ? { ...article, ...updates, updatedAt: new Date().toISOString() }
+          : article
+      );
+      console.log('文章更新完成');
+      return updated;
+    });
   };
 
   const deleteArticle = (id: string) => {
